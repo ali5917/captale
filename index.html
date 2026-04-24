@@ -126,81 +126,189 @@ flowchart LR
     </section>
 
     <section class="card">
-      <h2>Class Diagram</h2>
-      <p class="section-note">Includes the conceptual CityScene base class and core OOP relationships.</p>
+      <h2>Class Diagram — Core Orchestration</h2>
+      <p class="section-note">Top-level ownership, shared state, conceptual city abstraction, and state enums.</p>
       <div class="mermaid diagram">
-classDiagram
+  classDiagram
     class CityScene {
+      <<abstract>>
       +update()
       +draw()
+    }
+
+    class CapTaleState {
+      <<enumeration>>
+      LOBBY
+      PONG_CITY
+      CAR_CITY
+      ATM_CITY
+      EARN_CITY
+      ENERGY_CITY
+      SPACE_SHOOTER
+      CUSTOM_CITY
+      GAME_MANUAL
+    }
+
+    class RoomState {
+      <<enumeration>>
+      EMPTY
+      PONG
+      CAR
+      ATM
+      EARN
+      ENERGY
+      SPACESHOOTER
+      CUSTOM
     }
 
     class CapTaleSystem {
       -state
       -player
       -messages
+      -customCity
+      -lobby
+      -pongCity
+      -carCity
+      -atmCity
+      -spaceShooter
+      -earnCity
+      -energyCity
+      -enterPong
       +loadData()
       +saveData()
+      +runGame()
       +update()
       +draw()
     }
 
     class Cap {
       -pos
-      -cash
+      -speed
+      -direction
+      -size
       -tokens
+      -cash
       -energy
+      -gameOver
       +update()
       +draw()
-      +addCash()
-      +removeTokens()
-      +increaseEnergy()
     }
 
     class Lobby {
-      -rooms
+      -player
+      -rooms[21]
+      -currentState
       -messages
+      -energyWarning
       +update()
       +draw()
       +checkContains()
     }
 
-    class Room
-    class MessageManager
-    class Message
-    class CustomCity
-    class PongCity
-    class CarCity
-    class ATMCity
-    class EarnCity
-    class EnergyCity
-    class SpaceShooter
+    class Room {
+      -rec
+      -gameState
+      +drawRoom()
+    }
 
-    class Paddle
-    class AiPaddle
-    class player1Paddle
-    class player2Paddle
-    class Ball
+    class MessageManager {
+      -messages
+      -numMessages
+      -font
+      +addMessage()
+      +removeMessage()
+      +update()
+      +draw()
+    }
 
-    class Car
-    class Background
-    class Obstacle
-    class Coin
-    class PowerUp
+    class Message {
+      -text
+      -size
+      -message_timer
+      -visible
+      +update()
+      +draw()
+    }
 
-    class Question
-    class Item
-    class Basket
+    class Timer {
+      -duration
+      -startTime
+      -active
+      -repeat
+      -func
+      +update()
+    }
 
-    class Sprite
-    class Player
-    class Laser
-    class Meteor
-    class ExplosionAnimation
-    class PoweredUp
-    class TripleShot
-    class Shield
-    class Timer
+    class CustomCity {
+      -capsList[4]
+      -selectedIndex
+      -background
+      +draw()
+    }
+
+    class PongCity {
+      -ball
+      -player
+      -ai
+      -player1
+      -player2
+      -pongState
+      -enemyState
+      -isPaused
+      +update()
+      +draw()
+    }
+
+    class CarCity {
+      -car
+      -bg
+      -obs[100]
+      -coins[200]
+      -pups[20]
+      -score
+      -gameOver
+      -paused
+      +update()
+      +draw()
+    }
+
+    class ATMCity {
+      -player
+      -messages
+      -atmState
+      +update()
+      +draw()
+    }
+
+    class EarnCity {
+      -player
+      -questions
+      -currentQuestion
+      -numQuestions
+      -currentState
+      -streak
+      +update()
+      +draw()
+    }
+
+    class EnergyCity {
+      -player
+      -items
+      -basket
+      -spawnTimer
+      +update()
+      +draw()
+    }
+
+    class SpaceShooter {
+      -player
+      -lasers
+      -meteors
+      -powerUps
+      -score
+      +update()
+      +draw()
+    }
 
     CityScene <|-- CustomCity
     CityScene <|-- PongCity
@@ -210,57 +318,372 @@ classDiagram
     CityScene <|-- EnergyCity
     CityScene <|-- SpaceShooter
 
-    CapTaleSystem o-- Cap
-    CapTaleSystem o-- MessageManager
-    CapTaleSystem o-- CustomCity
-    CapTaleSystem o-- Lobby
-    CapTaleSystem o-- PongCity
-    CapTaleSystem o-- CarCity
-    CapTaleSystem o-- ATMCity
-    CapTaleSystem o-- EarnCity
-    CapTaleSystem o-- EnergyCity
-    CapTaleSystem o-- SpaceShooter
+    CapTaleSystem "1" *-- "1" Cap
+    CapTaleSystem "1" *-- "1" MessageManager
+    CapTaleSystem "1" *-- "1" Lobby
+    CapTaleSystem "1" *-- "1" CustomCity
+    CapTaleSystem "1" *-- "1" PongCity
+    CapTaleSystem "1" *-- "1" CarCity
+    CapTaleSystem "1" *-- "1" ATMCity
+    CapTaleSystem "1" *-- "1" EarnCity
+    CapTaleSystem "1" *-- "1" EnergyCity
+    CapTaleSystem "1" *-- "1" SpaceShooter
 
-    Lobby o-- Room
-    Lobby --> Cap
-    Lobby --> MessageManager
-    MessageManager o-- Message
+    Lobby "1" *-- "21" Room
+    Lobby --> Cap : use
+    Lobby --> MessageManager : use
+
+    MessageManager "1" *-- "0..*" Message
+    Message --> Timer
+
+    CapTaleSystem --> CapTaleState
+    Room --> RoomState
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Class Diagram — City Internals</h2>
+      <p class="section-note">Detailed per-city composition for Pong, Car, ATM, Earn, and Energy modules.</p>
+      <div class="mermaid diagram">
+  classDiagram
+    class CustomCity {
+      -capsList[4]
+      -selectedIndex
+      -background
+      +draw()
+      +nextCap()
+      +prevCap()
+    }
+
+    class PongState {
+      <<enumeration>>
+      GAME_ENEMY
+      GAME_MENU
+      GAME_PLAYING
+      GAME_WIN
+      GAME_LOSE
+    }
+
+    class PongCity {
+      -ball
+      -player
+      -ai
+      -player1
+      -player2
+      -pongState
+      -enemyState
+      -isPaused
+      +update()
+      +draw()
+    }
+
+    class Ball {
+      -x
+      -y
+      -radius
+      -speedX
+      -speedY
+      +update()
+      +draw()
+    }
+
+    class Paddle {
+      -x
+      -y
+      -width
+      -height
+      -speed
+      +update()
+      +draw()
+    }
+
+    class AiPaddle {
+      +update()
+    }
+
+    class Player1Paddle {
+      +update()
+    }
+
+    class Player2Paddle {
+      +update()
+    }
+
+    class CarCity {
+      -car
+      -bg
+      -obs[100]
+      -coins[200]
+      -pups[20]
+      -score
+      -gameOver
+      -paused
+      +update()
+      +draw()
+    }
+
+    class Car {
+      -position
+      -speed
+      -frozen
+      +update()
+      +draw()
+    }
+
+    class Obstacle {
+      -rect
+      -isBig
+      -active
+      +update()
+      +draw()
+    }
+
+    class Coin {
+      -rect
+      -active
+      +update()
+      +draw()
+    }
+
+    class CarPowerUp {
+      -rect
+      -active
+      -type
+      +update()
+      +draw()
+    }
+
+    class Background {
+      -scrollY
+      +update()
+      +draw()
+    }
+
+    class ATMState {
+      <<enumeration>>
+      MACHINE
+      WITHDRAW
+      BALANCE
+    }
+
+    class ATMCity {
+      -player
+      -messages
+      -atmState
+      +update()
+      +draw()
+    }
+
+    class EarnCity {
+      -player
+      -questions
+      -currentQuestion
+      -numQuestions
+      -currentState
+      -streak
+      +update()
+      +draw()
+    }
+
+    class Question {
+      -question
+      -options[4]
+      -correctOption
+      -cashReward
+      -penalty
+      +draw()
+    }
+
+    class QuestionsCsv {
+      <<datafile>>
+      -fileName
+    }
+
+    class EnergyCity {
+      -player
+      -items
+      -basket
+      -spawnTimer
+      +update()
+      +draw()
+    }
+
+    class Item {
+      -position
+      -speed
+      -active
+      -type
+      +update()
+      +draw()
+    }
+
+    class Basket {
+      -position
+      -speed
+      +update()
+      +draw()
+    }
+
+    class Cap {
+      -tokens
+      -cash
+      -energy
+      +addCash()
+      +removeTokens()
+      +increaseEnergy()
+    }
+
+    class MessageManager {
+      -messages
+      -numMessages
+      -font
+      +addMessage()
+    }
+
+    PongCity "1" *-- "1" Ball
+    PongCity "1" *-- "1" Paddle
+    PongCity "1" *-- "1" AiPaddle
+    PongCity "1" *-- "1" Player1Paddle
+    PongCity "1" *-- "1" Player2Paddle
+    PongCity --> PongState
+
+    Paddle <|-- AiPaddle
+    Paddle <|-- Player1Paddle
+    Paddle <|-- Player2Paddle
+
+    CarCity "1" *-- "1" Car
+    CarCity "1" *-- "1" Background
+    CarCity "1" o-- "0..100" Obstacle
+    CarCity "1" o-- "0..200" Coin
+    CarCity "1" o-- "0..20" CarPowerUp
+
+    ATMCity --> ATMState
     ATMCity --> Cap
     ATMCity --> MessageManager
+
     EarnCity --> Cap
+    EarnCity "1" *-- "0..*" Question
+    EarnCity ..> QuestionsCsv : datafile questions.csv
+
     EnergyCity --> Cap
-    CustomCity --> CapTaleSystem
+    EnergyCity "1" *-- "9" Item
+    EnergyCity "1" *-- "1" Basket
+      </div>
+    </section>
 
-    PongCity o-- Ball
-    PongCity o-- Paddle
-    Paddle <|-- AiPaddle
-    Paddle <|-- player1Paddle
-    Paddle <|-- player2Paddle
+    <section class="card">
+      <h2>Class Diagram — Sprite & Shooter Subsystem</h2>
+      <p class="section-note">Polymorphic sprite hierarchy and SpaceShooter runtime composition/timer wiring.</p>
+      <div class="mermaid diagram">
+  classDiagram
+    class SpaceShooter {
+      -player
+      -lasers
+      -meteors
+      -explosions
+      -powerUps
+      -selectedGameMode
+      -selected
+      -gameOver
+      -returnToLobby
+      -score
+      -meteorTimer
+      -powerUpTimer
+      -overTimer
+      +update()
+      +draw()
+    }
 
-    CarCity o-- Car
-    CarCity o-- Background
-    CarCity o-- Obstacle
-    CarCity o-- Coin
-    CarCity o-- PowerUp
+    class Sprite {
+      <<abstract>>
+      -texture
+      -pos
+      -speed
+      -direction
+      -size
+      -discard
+      -collisionRadius
+      +update()
+      +draw()
+    }
 
-    EnergyCity o-- Item
-    EnergyCity o-- Basket
-    EarnCity o-- Question
+    class Player {
+      -tripleShot
+      -shield
+      -tripleShotTimer
+      -shieldTimer
+      +update()
+      +draw()
+    }
+
+    class Laser {
+      -rotation
+      +update()
+      +draw()
+    }
+
+    class Meteor {
+      -rotation
+      +update()
+      +draw()
+    }
+
+    class ExplosionAnimation {
+      -index
+      -discard
+      +update()
+      +draw()
+    }
+
+    class PoweredUp {
+      -player
+      -activated
+      -discardTimer
+      +applyPower()
+      +update()
+    }
+
+    class TripleShot {
+      +applyPower()
+    }
+
+    class Shield {
+      +applyPower()
+    }
+
+    class Timer {
+      -duration
+      -startTime
+      -active
+      -repeat
+      -func
+      +update()
+    }
 
     Sprite <|-- Player
     Sprite <|-- Laser
     Sprite <|-- Meteor
     Sprite <|-- ExplosionAnimation
     Sprite <|-- PoweredUp
+
     PoweredUp <|-- TripleShot
     PoweredUp <|-- Shield
-    SpaceShooter o-- Player
-    SpaceShooter o-- Laser
-    SpaceShooter o-- Meteor
-    SpaceShooter o-- ExplosionAnimation
-    SpaceShooter o-- PoweredUp
-    SpaceShooter --> Timer
-    Message --> Timer
+
+    SpaceShooter "1" *-- "1" Player
+    SpaceShooter "1" *-- "0..*" Laser
+    SpaceShooter "1" *-- "0..*" Meteor
+    SpaceShooter "1" *-- "0..*" ExplosionAnimation
+    SpaceShooter "1" *-- "0..*" PoweredUp
+
+    SpaceShooter --> Timer : meteorTimer
+    SpaceShooter --> Timer : powerUpTimer
+    SpaceShooter --> Timer : overTimer
+
+    Player --> Timer : tripleShotTimer
+    Player --> Timer : shieldTimer
+    PoweredUp --> Timer : discardTimer
+
+    PoweredUp --> Player : callback
       </div>
     </section>
 
@@ -528,35 +951,39 @@ sequenceDiagram
       <p class="section-note">Frame-by-frame sequential control flow for update, game-over transition, rendering, and shutdown persistence.</p>
       <div class="mermaid diagram">
 flowchart TD
-  s([Start]) --> init[Initialize Raylib window and CapTaleSystem]
-  init --> checkClose{{Window should close}}
+  subgraph laneGame[CapTaleSystem]
+    s([Start]) --> init[Initialize window and game system]
+    init --> checkClose{{Window should close}}
+    checkClose -- No --> frameStart[Begin frame]
+    frameStart --> dispatch{{Current state}}
 
-  checkClose -- No --> frameStart[Begin frame]
-  frameStart --> dispatch{{Current state}}
+    dispatch --> custom[Update CUSTOM CITY]
+    dispatch --> lobbyUpdate[Call lobby update and get next state]
+    dispatch --> city[Update active city module]
+    dispatch --> manual[Update GAME MANUAL]
+    dispatch --> over[Keep GAME OVER state]
 
-  dispatch --> custom[Update CUSTOM CITY]
-  dispatch --> lobbyUpdate[Call lobby update and get next state]
-  dispatch --> city[Update active city module]
-  dispatch --> manual[Update GAME MANUAL]
-  dispatch --> over[Keep GAME OVER state]
+    lobbyUpdate --> gameOverCheck{{player getGameOver}}
+    gameOverCheck -- Yes --> setOver[Set state to GAME OVER]
+    gameOverCheck -- No --> keepLobby[Keep returned lobby state]
 
-  lobbyUpdate --> gameOverCheck{{player getGameOver}}
-  gameOverCheck -- Yes --> setOver[Set state to GAME OVER]
-  gameOverCheck -- No --> keepLobby[Keep returned lobby state]
+    checkClose -- Yes --> shutdown[Save data unload textures close window]
+    shutdown --> e([End])
+  end
 
-  custom --> updateMsgs[Update MessageManager]
+  subgraph laneUI[Renderer and Messages]
+    updateMsgs[Update MessageManager]
+    drawState[Draw scene for current state]
+    endFrame[EndDrawing]
+  end
+
+  custom --> updateMsgs
   setOver --> updateMsgs
   keepLobby --> updateMsgs
   city --> updateMsgs
   manual --> updateMsgs
   over --> updateMsgs
-
-  updateMsgs --> drawState[Draw scene for current state]
-  drawState --> endFrame[EndDrawing]
-  endFrame --> checkClose
-
-  checkClose -- Yes --> shutdown[Save data unload textures close window]
-  shutdown --> e([End])
+  updateMsgs --> drawState --> endFrame --> checkClose
       </div>
     </section>
 
@@ -565,26 +992,41 @@ flowchart TD
       <p class="section-note">How the player navigates lobby rooms and enters city scenes.</p>
       <div class="mermaid diagram">
 flowchart TD
-    s([Start]) --> lobbyIn[Enter Lobby state]
-    lobbyIn --> move[Move Cap in lobby]
-    move --> inside{{Inside an interactive room?}}
+    subgraph lanePlayer[Player]
+      s([Start]) --> move[Move in lobby]
+      move --> enterKey{{Enter key pressed}}
+      cityLoop --> back{{Press L or city exit condition}}
+      lobbyReturn --> e([End])
+    end
+
+    subgraph laneLobby[Lobby and Cap]
+      lobbyIn[Enter LOBBY state]
+      inside{{Inside interactive room}}
+      gated{{Room has token requirement}}
+      enough{{Enough tokens available}}
+      deduct[Deduct room token cost]
+      warn[Show warning message]
+    end
+
+    subgraph laneSystem[CapTaleSystem]
+      sceneStart[Switch to selected scene]
+      cityLoop[Run city update and draw loop]
+      lobbyReturn[Return to LOBBY state]
+    end
+
+    s --> lobbyIn --> move
+    move --> inside
     inside -- No --> move
-    inside -- Yes --> enterKey{{Enter key pressed?}}
+    inside -- Yes --> enterKey
     enterKey -- No --> move
-    enterKey -- Yes --> gated{{Room has token requirement?}}
-
-    gated -- No --> sceneStart[Switch to selected scene]
-    gated -- Yes --> enough{{Enough tokens available?}}
-    enough -- No --> warn[Show warning message]
-    warn --> move
-    enough -- Yes --> deduct[Deduct room token cost]
-    deduct --> sceneStart
-
-    sceneStart --> cityLoop[Run city update/draw loop]
-    cityLoop --> back{{L pressed or city exit condition?}}
+    enterKey -- Yes --> gated
+    gated -- No --> sceneStart
+    gated -- Yes --> enough
+    enough -- No --> warn --> move
+    enough -- Yes --> deduct --> sceneStart
+    sceneStart --> cityLoop
     back -- No --> cityLoop
-    back -- Yes --> lobbyReturn[Return to Lobby state]
-    lobbyReturn --> e([End])
+    back -- Yes --> lobbyReturn
       </div>
     </section>
 
@@ -593,31 +1035,39 @@ flowchart TD
       <p class="section-note">Enemy selection, gameplay loop, pause logic, and win/lose transitions.</p>
       <div class="mermaid diagram">
 flowchart TD
-    s([Start]) --> enemyMenu[Open enemy mode menu]
-    enemyMenu --> mode{{AI or Human mode selected?}}
-    mode --> level[Select level or start match]
-    level --> playLoop[Gameplay loop]
+    subgraph lanePlayerPong[Player]
+      s([Start]) --> enemyMenu[Open enemy mode menu]
+      enemyMenu --> mode{{Select AI or Human mode}}
+      mode --> level[Select level or start match]
+      playLoop --> pauseQ{{Pause key pressed}}
+      paused --> resume{{Resume Menu or Restart}}
+      endScreen --> replay{{Replay or Return}}
+    end
 
-    playLoop --> pauseQ{{Pause key pressed?}}
-    pauseQ -- Yes --> paused[Pause screen]
-    paused --> resume{{Resume or menu/restart?}}
+    subgraph lanePong[PongCity State Machine]
+      playLoop[Gameplay loop]
+      paused[Pause screen]
+      score[Update scores]
+      winQ{{Win lose target reached}}
+      endScreen[Show WIN LOSE screen]
+    end
+
+    subgraph laneObjects[Ball and Paddles]
+      pad[Update paddles]
+      ball[Update ball movement]
+      coll[Check collisions]
+    end
+
+    level --> playLoop
+    pauseQ -- Yes --> paused
     resume -- Resume --> playLoop
     resume -- Menu --> enemyMenu
     resume -- Restart --> level
-
-    pauseQ -- No --> forkPlay[[Fork]]
-    forkPlay --> pad[Update paddles]
-    forkPlay --> ball[Update ball movement]
-    forkPlay --> coll[Check collisions]
-    pad --> joinPlay[[Join]]
-    ball --> joinPlay
-    coll --> joinPlay
-
-    joinPlay --> score[Update scores]
-    score --> winQ{{Win/Lose target reached?}}
+    pauseQ -- No --> pad
+    pad --> ball --> coll --> score
+    score --> winQ
     winQ -- No --> playLoop
-    winQ -- Yes --> endScreen[Show WIN/LOSE screen]
-    endScreen --> replay{{Replay or return?}}
+    winQ -- Yes --> endScreen
     replay -- Replay --> level
     replay -- Return --> e([End])
       </div>
@@ -628,34 +1078,40 @@ flowchart TD
       <p class="section-note">Mode selection, parallel gameplay updates, collisions, and return flow.</p>
       <div class="mermaid diagram">
 flowchart TD
-    s([Start]) --> modeSel[Show game mode selection]
-    modeSel --> confirm{{Mode confirmed?}}
+    subgraph lanePlayerSpace[Player]
+      s([Start]) --> modeSel[Select mode 1 2 or 3]
+      modeSel --> confirm{{Confirm with RIGHT SHIFT}}
+      leaveQ{{Press L to leave}}
+      leaveOver{{Press L on game over screen}}
+    end
+
+    subgraph laneSpace[SpaceShooter Controller]
+      initRun[Initialize timers and flags]
+      frameLoop[Gameplay frame loop]
+      collisions[Check collisions]
+      over{{Game over or mode limit reached}}
+      gameOver[Show game over summary screen]
+      lobbyOut[Set returnToLobby true]
+    end
+
+    subgraph laneEntities[Player ship and objects]
+      input[Handle movement and shooting]
+      spawn[Update meteor and powerup timers]
+      updateSprites[Update lasers meteors explosions powerups]
+      audio[Update music stream]
+    end
+
     confirm -- No --> modeSel
-    confirm -- Yes --> initRun[Initialize timers, player, and counters]
-    initRun --> frameLoop[Gameplay frame loop]
-
-    frameLoop --> forkShoot[[Fork]]
-    forkShoot --> input[Handle movement and shooting input]
-    forkShoot --> spawn[Update meteor/power-up timers]
-    forkShoot --> updateSprites[Update lasers, meteors, explosions]
-    forkShoot --> audio[Update music/audio]
-
-    input --> joinShoot[[Join]]
-    spawn --> joinShoot
-    updateSprites --> joinShoot
-    audio --> joinShoot
-
-    joinShoot --> collisions[Check player/laser/object collisions]
-    collisions --> over{{Game over or mode limit reached?}}
-    over -- No --> leave{{L pressed to leave?}}
-    leave -- No --> frameLoop
-    leave -- Yes --> lobbyOut[Set returnToLobby=true]
-    lobbyOut --> e([End])
-
-    over -- Yes --> gameOver[Show game over summary screen]
-    gameOver --> leaveOver{{L pressed to return?}}
+    confirm -- Yes --> initRun --> frameLoop
+    frameLoop --> input --> spawn --> updateSprites --> audio --> collisions
+    collisions --> over
+    over -- No --> leaveQ
+    leaveQ -- No --> frameLoop
+    leaveQ -- Yes --> lobbyOut
+    over -- Yes --> gameOver
     leaveOver -- No --> gameOver
     leaveOver -- Yes --> lobbyOut
+    lobbyOut --> e([End])
       </div>
     </section>
 
@@ -664,57 +1120,52 @@ flowchart TD
       <p class="section-note">Runner loop with spawning, collisions, effects, pause, and restart behavior.</p>
       <div class="mermaid diagram">
 flowchart TD
-    s([Start]) --> init[Initialize car, background, obstacles, coins, and power-ups]
-    init --> runLoop[CarCity frame loop]
+    subgraph lanePlayerCar[Player]
+      s([Start]) --> drive[Steer car left right]
+      restartQ{{Press R to restart}}
+    end
 
-    gameOverQ{{Game over state?}}
-    restartQ{{R pressed to restart?}}
-    pausedQ{{Paused second life delay?}}
-    resumeQ{{Pause timer finished?}}
-    collQ{{Collision with obstacle?}}
-    lifeQ{{Big obstacle or second life used?}}
-    coinQ{{Coin collected?}}
-    effectQ{{Power-up collected?}}
+    subgraph laneControllerCar[CarCity Controller]
+      init[Initialize car and level assets]
+      runLoop[CarCity frame loop]
+      gameOverQ{{Game over state}}
+      pausedQ{{Paused second life delay}}
+      resumeQ{{Pause timer finished}}
+      reset[Reset score timers entities and car state]
+      scoreTick[Update score and difficulty timers]
+    end
 
+    subgraph laneEntitiesCar[Car Obstacles Coins PowerUps]
+      moveCar[Update car movement]
+      spawnObs[Spawn or update obstacles]
+      spawnCoins[Spawn or update coins]
+      spawnPups[Spawn or update powerups]
+      collQ{{Collision with obstacle}}
+      lifeQ{{Big obstacle or second life used}}
+      secondLife[Activate second life pause]
+      addCoin[Increment coin counter]
+      effectQ{{Powerup collected}}
+      applyFx[Apply slow freeze or coin rain effect]
+      toGameOver[Set gameOver true]
+    end
+
+    init --> runLoop
     runLoop --> gameOverQ
     gameOverQ -- Yes --> restartQ
     restartQ -- No --> runLoop
-    restartQ -- Yes --> reset[Reset score, timers, entities, and car state]
-    reset --> runLoop
-
+    restartQ -- Yes --> reset --> runLoop
     gameOverQ -- No --> pausedQ
-    pausedQ -- Yes --> pauseTimer[Update pause timer]
-    pauseTimer --> resumeQ
+    pausedQ -- Yes --> resumeQ
     resumeQ -- No --> runLoop
     resumeQ -- Yes --> runLoop
 
-    pausedQ -- No --> forkCar[[Fork]]
-    forkCar --> moveCar[Update car movement]
-    forkCar --> spawnObs[Spawn/update obstacles]
-    forkCar --> spawnCoins[Spawn/update coins]
-    forkCar --> spawnPups[Spawn/update power-ups]
-
-    moveCar --> joinCar[[Join]]
-    spawnObs --> joinCar
-    spawnCoins --> joinCar
-    spawnPups --> joinCar
-
-    joinCar --> collQ
+    pausedQ -- No --> drive --> moveCar --> spawnObs --> spawnCoins --> spawnPups --> collQ
     collQ -- Yes --> lifeQ
-    lifeQ -- Yes --> toGameOver[Set gameOver=true]
-    toGameOver --> runLoop
-    lifeQ -- No --> secondLife[Activate second-life pause]
-    secondLife --> runLoop
-
-    collQ -- No --> coinQ
-    coinQ -- Yes --> addCoin[Increment coin counter]
-    addCoin --> effectQ
-    coinQ -- No --> effectQ
-
-    effectQ -- Yes --> applyFx[Apply slow freeze or coin-rain effect]
-    applyFx --> scoreTick
-    effectQ -- No --> scoreTick[Update score and difficulty timers]
-    scoreTick --> runLoop
+    lifeQ -- Yes --> toGameOver --> runLoop
+    lifeQ -- No --> secondLife --> runLoop
+    collQ -- No --> addCoin --> effectQ
+    effectQ -- Yes --> applyFx --> scoreTick --> runLoop
+    effectQ -- No --> scoreTick --> runLoop
       </div>
     </section>
 
