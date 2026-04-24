@@ -1088,6 +1088,8 @@ flowchart TD
     subgraph laneSpace[SpaceShooter Controller]
       initRun[Initialize timers and flags]
       frameLoop[Gameplay frame loop]
+      forkShoot[[Fork]]
+      joinShoot[[Join]]
       collisions[Check collisions]
       over{{Game over or mode limit reached}}
       gameOver[Show game over summary screen]
@@ -1103,7 +1105,16 @@ flowchart TD
 
     confirm -- No --> modeSel
     confirm -- Yes --> initRun --> frameLoop
-    frameLoop --> input --> spawn --> updateSprites --> audio --> collisions
+    frameLoop --> forkShoot
+    forkShoot --> input
+    forkShoot --> spawn
+    forkShoot --> updateSprites
+    forkShoot --> audio
+    input --> joinShoot
+    spawn --> joinShoot
+    updateSprites --> joinShoot
+    audio --> joinShoot
+    joinShoot --> collisions
     collisions --> over
     over -- No --> leaveQ
     leaveQ -- No --> frameLoop
