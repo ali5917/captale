@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CapTale Software Design Report</title>
+  <link rel="stylesheet" href="sda-report.css">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>
+    window.addEventListener("DOMContentLoaded", () => {
+      mermaid.initialize({
+        startOnLoad: true,
+        theme: "base",
+        securityLevel: "strict",
+        themeVariables: {
+          fontFamily: "Inter, Segoe UI, Arial, sans-serif",
+          primaryColor: "#e8f0f7",
+          primaryTextColor: "#102331",
+          primaryBorderColor: "#6f8ca3",
+          lineColor: "#6f8ca3",
+          secondaryColor: "#f5f7fa",
+          tertiaryColor: "#ffffff"
+        }
+      });
+    });
+  </script>
+</head>
+<body>
+  <header class="hero">
+    <div class="hero__content">
+      <p class="eyebrow">Academic Software Design Report</p>
+      <h1>CapTale</h1>
+      <p class="lede">A desktop Raylib game organized as a lobby-driven hub with city mini-games, shared player resources, and a state-based runtime flow.</p>
+    </div>
+  </header>
+
+  <main class="report">
+    <section class="card">
+      <h2>Use Case Diagram</h2>
+<p class="section-note">Player-centered interactions only.</p>
+<div class="mermaid diagram">
+flowchart LR
+    player["👤 Player"]
+    fs["🗄️ File System"]
+
+    subgraph system["CapTale System"]
+
+      subgraph lobby["Lobby"]
+        explore["Explore Lobby"]
+        customizeCap["Customize Cap"]
+        viewManual["View Manual"]
+        returnLobby["Return to Lobby"]
+      end
+
+      subgraph paidGames["Paid Mini-Games"]
+        accessPaid["Access Paid Mini-Game"]
+        checkReq["Check Entry Requirement"]
+        deductTok["Deduct Token"]
+        entryBlocked["See Entry Blocked Message"]
+
+        playPong["Play Pong City"]
+        playCar["Play Car City"]
+        playShooter["Play Space Shooter"]
+
+        pauseResume["Pause / Resume"]
+        restartReplay["Restart / Replay"]
+      end
+
+      subgraph resourceCities["Resource Cities"]
+        enterResource["Enter Resource City"]
+        restoreEnergy["Restore Energy"]
+        earnCash["Earn Cash"]
+        convertTokens["Convert Cash → Tokens"]
+
+        playEnergy["Play Energy City"]
+        playEarn["Play Earn City"]
+        useATM["Use ATM City"]
+      end
+
+      saveProgress["Save / Restore Progress"]
+
+    end
+
+    %% Player to lobby
+    player --> explore
+    player --> customizeCap
+    player --> viewManual
+    player --> returnLobby
+
+    %% Player to paid games
+    player --> accessPaid
+
+    %% Player to resource cities
+    player --> enterResource
+
+    %% File System
+    fs -.->|"«triggers»"| saveProgress
+
+    %% Paid game include chain
+    accessPaid -->|"«include»"| checkReq
+    accessPaid -->|"«include»"| deductTok
+    entryBlocked -.->|"«extend»"| checkReq
+
+    %% Paid game specializations
+    playPong -->|"«specializes»"| accessPaid
+    playCar -->|"«specializes»"| accessPaid
+    playShooter -->|"«specializes»"| accessPaid
+
+    %% Extend only paid games that support it
+    pauseResume -.->|"«extend»"| playPong
+    pauseResume -.->|"«extend»"| playCar
+    pauseResume -.->|"«extend»"| playShooter
+    restartReplay -.->|"«extend»"| playPong
+    restartReplay -.->|"«extend»"| playCar
+    restartReplay -.->|"«extend»"| playShooter
+
+    %% Resource city specializations + included goals
+    playEnergy -->|"«specializes»"| enterResource
+    playEarn -->|"«specializes»"| enterResource
+    useATM -->|"«specializes»"| enterResource
+
+    playEnergy -->|"«include»"| restoreEnergy
+    playEarn -->|"«include»"| earnCash
+    useATM -->|"«include»"| convertTokens
+</div>
+    </section>
+
+    <section class="card">
+      <h2>Class Diagram</h2>
+      <p class="section-note">Includes the conceptual CityScene base class and core OOP relationships.</p>
+      <div class="mermaid diagram">
+classDiagram
+    class CityScene {
+      +update()
+      +draw()
+    }
+
+    class CapTaleSystem {
+      -state
+      -player
+      -messages
+      +loadData()
+      +saveData()
+      +update()
+      +draw()
+    }
+
+    class Cap {
+      -pos
+      -cash
+      -tokens
+      -energy
+      +update()
+      +draw()
+      +addCash()
+      +removeTokens()
+      +increaseEnergy()
+    }
+
+    class Lobby {
+      -rooms
+      -messages
+      +update()
+      +draw()
+      +checkContains()
+    }
+
+    class Room
+    class MessageManager
+    class Message
+    class CustomCity
+    class PongCity
+    class CarCity
+    class ATMCity
+    class EarnCity
+    class EnergyCity
+    class SpaceShooter
+
+    class Paddle
+    class AiPaddle
+    class player1Paddle
+    class player2Paddle
+    class Ball
+
+    class Car
+    class Background
+    class Obstacle
+    class Coin
+    class PowerUp
+
+    class Question
+    class Item
+    class Basket
+
+    class Sprite
+    class Player
+    class Laser
+    class Meteor
+    class ExplosionAnimation
+    class PoweredUp
+    class TripleShot
+    class Shield
+    class Timer
+
+    CityScene <|-- CustomCity
+    CityScene <|-- PongCity
+    CityScene <|-- CarCity
+    CityScene <|-- ATMCity
+    CityScene <|-- EarnCity
+    CityScene <|-- EnergyCity
+    CityScene <|-- SpaceShooter
+
+    CapTaleSystem o-- Cap
+    CapTaleSystem o-- MessageManager
+    CapTaleSystem o-- CustomCity
+    CapTaleSystem o-- Lobby
+    CapTaleSystem o-- PongCity
+    CapTaleSystem o-- CarCity
+    CapTaleSystem o-- ATMCity
+    CapTaleSystem o-- EarnCity
+    CapTaleSystem o-- EnergyCity
+    CapTaleSystem o-- SpaceShooter
+
+    Lobby o-- Room
+    Lobby --> Cap
+    Lobby --> MessageManager
+    MessageManager o-- Message
+    ATMCity --> Cap
+    ATMCity --> MessageManager
+    EarnCity --> Cap
+    EnergyCity --> Cap
+    CustomCity --> CapTaleSystem
+
+    PongCity o-- Ball
+    PongCity o-- Paddle
+    Paddle <|-- AiPaddle
+    Paddle <|-- player1Paddle
+    Paddle <|-- player2Paddle
+
+    CarCity o-- Car
+    CarCity o-- Background
+    CarCity o-- Obstacle
+    CarCity o-- Coin
+    CarCity o-- PowerUp
+
+    EnergyCity o-- Item
+    EnergyCity o-- Basket
+    EarnCity o-- Question
+
+    Sprite <|-- Player
+    Sprite <|-- Laser
+    Sprite <|-- Meteor
+    Sprite <|-- ExplosionAnimation
+    Sprite <|-- PoweredUp
+    PoweredUp <|-- TripleShot
+    PoweredUp <|-- Shield
+    SpaceShooter o-- Player
+    SpaceShooter o-- Laser
+    SpaceShooter o-- Meteor
+    SpaceShooter o-- ExplosionAnimation
+    SpaceShooter o-- PoweredUp
+    SpaceShooter --> Timer
+    Message --> Timer
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Player Entering a City (Navigation Flow)</h2>
+      <p class="section-note">Code-accurate flow from Lobby.update() to CapTaleSystem state transition.</p>
+      <div class="mermaid diagram">
+sequenceDiagram
+    actor Player
+    participant CapTaleSystem
+    participant Lobby
+    participant Cap
+    participant MessageManager
+    participant CityModule as Selected City Module
+
+    loop While CapTaleSystem state == LOBBY
+      Player->>CapTaleSystem: Movement/Enter input this frame
+      CapTaleSystem->>Lobby: lobby.update()
+      Lobby->>Cap: player.update(dt)
+      Lobby->>Lobby: checkContains() for room overlap
+      alt currentState != EMPTY and Enter pressed
+        alt Token-gated room (PONG/CAR/SPACESHOOTER)
+          Lobby->>Cap: check available tokens
+          alt Enough tokens
+            Lobby->>Cap: removeTokens(requiredCost)
+            Lobby-->>CapTaleSystem: return room state
+            CapTaleSystem->>CapTaleSystem: state = returned city enum
+            CapTaleSystem->>CityModule: city.update() on next frame
+          else Insufficient tokens
+            Lobby->>MessageManager: addMessage("need tokens")
+            Lobby-->>CapTaleSystem: return EMPTY
+            CapTaleSystem->>CapTaleSystem: remain in LOBBY
+          end
+        else Non-token room (ATM/EARN/ENERGY/EAT)
+          Lobby-->>CapTaleSystem: return room state
+          CapTaleSystem->>CapTaleSystem: state = returned city enum
+          CapTaleSystem->>CityModule: city.update() on next frame
+        end
+      else No valid room entry
+        Lobby-->>CapTaleSystem: return EMPTY (or MANUAL on menu click)
+        CapTaleSystem->>CapTaleSystem: stay LOBBY (or switch GAME_MANUAL)
+        end
+    end
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Pong Game Flow</h2>
+      <p class="section-note">Code-aligned flow for PONG_CITY entry, mode selection, gameplay updates, pause, and exit.</p>
+      <div class="mermaid diagram">
+  sequenceDiagram
+    actor Player
+    participant CapTaleSystem
+    participant PongCity
+    participant Ball
+    participant Paddles as Player/Ai Paddles
+
+    Player->>CapTaleSystem: Enter Pong room from Lobby
+    CapTaleSystem->>CapTaleSystem: state = PONG_CITY
+    CapTaleSystem->>CapTaleSystem: if not enterPong set isPaused=false and pongState=GAME_ENEMY
+
+    loop While state == PONG_CITY
+      alt Player presses L
+        Player->>CapTaleSystem: Request return to lobby
+        CapTaleSystem->>CapTaleSystem: state = LOBBY and enterPong = false
+      else Continue Pong scene
+        CapTaleSystem->>PongCity: pongCity.update()
+
+        alt pongState == GAME_ENEMY
+          Player->>PongCity: Click AI or Human option
+          PongCity->>PongCity: enemyUpdate() sets enemyState and next state
+        else pongState == GAME_MENU
+          Player->>PongCity: Press K N or R to choose level
+          PongCity->>PongCity: gameLevel set and state = GAME_PLAYING
+        else pongState == GAME_PLAYING
+          alt Not paused
+            Paddles->>Paddles: Update paddle positions from input or AI
+            Ball->>Ball: Update ball movement and wall bounce
+            PongCity->>PongCity: Check ball-paddle collisions and invert speed
+            PongCity->>PongCity: Update scores and evaluate win/lose threshold
+          else Paused
+            Player->>PongCity: Press X to resume or R to reset
+          end
+        else pongState == GAME_WIN or GAME_LOSE
+          Player->>PongCity: Press M for menu or R for replay
+          PongCity->>PongCity: Transition to GAME_MENU or GAME_PLAYING
+        end
+      end
+    end
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>SpaceShooter Game Flow</h2>
+      <p class="section-note">Code-aligned flow for SPACE_CITY update loop, mode selection, gameplay frames, and lobby return.</p>
+      <div class="mermaid diagram">
+  sequenceDiagram
+    actor Player
+    participant CapTaleSystem
+    participant SpaceShooter
+    participant PlayerShip as Shooter Player
+    participant Objects as Lasers Meteors PowerUps
+
+    Player->>CapTaleSystem: Enter Space Shooter room from Lobby
+    CapTaleSystem->>CapTaleSystem: state = SPACE_CITY
+
+    loop While state == SPACE_CITY
+      alt Player presses L in CapTaleSystem
+        Player->>CapTaleSystem: Exit request
+        CapTaleSystem->>SpaceShooter: restart()
+        CapTaleSystem->>CapTaleSystem: state = LOBBY
+      else Continue SPACE_CITY frame
+        CapTaleSystem->>SpaceShooter: val = update()
+        alt returnToLobby already true in SpaceShooter
+          SpaceShooter-->>CapTaleSystem: val = true
+          CapTaleSystem->>SpaceShooter: restart()
+          CapTaleSystem->>CapTaleSystem: state = LOBBY
+        else val == false
+          alt Mode not selected yet
+            Player->>SpaceShooter: Press 1 2 or 3 then RIGHT_SHIFT
+            SpaceShooter->>SpaceShooter: selected=true and configure timers
+            Player->>SpaceShooter: Optional L to return
+            SpaceShooter->>SpaceShooter: returnToLobby=true when L pressed
+          else Gameplay active
+            Player->>PlayerShip: Move and shoot
+            SpaceShooter->>Objects: Update lasers meteors explosions powerups
+            SpaceShooter->>SpaceShooter: checkCollisions and discardSprites
+            SpaceShooter-->>Player: Draw HUD score and scene
+            alt Game over screen
+              Player->>SpaceShooter: Press L to exit
+              SpaceShooter->>SpaceShooter: returnToLobby=true
+            end
+          end
+        end
+      end
+    end
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Token Conversion (ATM City Flow)</h2>
+      <p class="section-note">Cash is converted into tokens in ATM City and reflected in player state.</p>
+      <div class="mermaid diagram">
+sequenceDiagram
+    actor Player
+    participant Lobby
+    participant ATMCity
+    participant Cap
+    participant MessageManager
+
+    Player->>Lobby: Enter ATM room from lobby
+    Lobby->>ATMCity: Switch scene to ATM City
+    Player->>ATMCity: Press W for Withdraw
+    ATMCity->>Cap: Read current cash
+    ATMCity->>Cap: Convert cash to tokens (cash / 50)
+    ATMCity->>Cap: Set cash to 0
+    ATMCity->>MessageManager: Add conversion message
+    MessageManager-->>Player: Show converted amount and new tokens
+    Player->>ATMCity: Press L to return
+    ATMCity->>Lobby: Return to lobby scene
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Energy Collection (Energy City Flow)</h2>
+      <p class="section-note">Player collects falling items to recover shared Cap energy.</p>
+      <div class="mermaid diagram">
+sequenceDiagram
+    actor Player
+    participant Lobby
+    participant EnergyCity
+    participant Basket
+    participant Item
+    participant Cap
+
+    Player->>Lobby: Enter Energy City room
+    Lobby->>EnergyCity: Switch scene to Energy City
+    loop Each frame
+        Player->>Basket: Move left/right
+        EnergyCity->>Item: Spawn or update falling item
+        EnergyCity->>Basket: Check collision with item
+        alt Fruit collected
+            EnergyCity->>Cap: increaseEnergy(2)
+        else Cap item collected
+            EnergyCity->>Cap: increaseEnergy(10)
+        end
+        EnergyCity-->>Player: Render updated energy bar
+    end
+    Player->>EnergyCity: Press L to return
+    EnergyCity->>Lobby: Return to lobby scene
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Earn City Quiz Flow</h2>
+      <p class="section-note">Quiz answers update the player's cash balance with rewards or penalties.</p>
+      <div class="mermaid diagram">
+sequenceDiagram
+    actor Player
+    participant Lobby
+    participant EarnCity
+    participant Cap
+
+    Player->>Lobby: Enter Earn City room
+    Lobby->>EarnCity: Switch scene to Earn City
+  loop Quiz cycle repeats while L is not pressed
+    alt Start or continue quiz
+      Player->>EarnCity: Press E to start/continue
+      EarnCity->>EarnCity: Load random question
+      EarnCity-->>Player: Display prompt and options
+      Player->>EarnCity: Submit answer (A/B/C/D or Skip)
+      alt Correct answer
+        EarnCity->>Cap: addCash(reward)
+        EarnCity-->>Player: Show correct and reward screen
+      else Incorrect answer
+        EarnCity->>Cap: removeCash(penalty or available cash)
+        EarnCity-->>Player: Show incorrect and penalty screen
+      else Skip
+        EarnCity->>EarnCity: Load next question
+        EarnCity-->>Player: Continue quiz without cash change
+      end
+    else Exit requested
+      Player->>EarnCity: Press L to return
+      EarnCity->>Lobby: Return to lobby scene
+    end
+    end
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Save and Load Progress Flow</h2>
+      <p class="section-note">Persistent player profile read on startup and written on exit.</p>
+      <div class="mermaid diagram">
+sequenceDiagram
+    actor Player
+    participant Main as main()
+    participant CapTaleSystem
+    participant Cap
+    participant File as characterData.txt
+
+    Player->>Main: Launch game
+    Main->>CapTaleSystem: Construct system
+    CapTaleSystem->>File: Open and read saved data
+    alt Save file is valid
+        File-->>CapTaleSystem: Position, cash, tokens, energy, selected cap
+        CapTaleSystem->>Cap: Apply loaded values
+        CapTaleSystem-->>Main: Start in LOBBY
+    else File missing or invalid
+        CapTaleSystem-->>Main: Start in CUSTOM_CITY
+    end
+
+    loop During session
+        Player->>Cap: Spend tokens, gain cash, gain/lose energy
+    end
+
+    Player->>Main: Close game window
+    Main->>CapTaleSystem: Trigger destruction
+    CapTaleSystem->>File: Write current position/resources/selected cap
+    File-->>CapTaleSystem: Save complete
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Activity Diagram: Main Game Loop</h2>
+      <p class="section-note">Frame-by-frame sequential control flow for update, game-over transition, rendering, and shutdown persistence.</p>
+      <div class="mermaid diagram">
+flowchart TD
+  s([Start]) --> init[Initialize Raylib window and CapTaleSystem]
+  init --> checkClose{{Window should close}}
+
+  checkClose -- No --> frameStart[Begin frame]
+  frameStart --> dispatch{{Current state}}
+
+  dispatch --> custom[Update CUSTOM CITY]
+  dispatch --> lobbyUpdate[Call lobby update and get next state]
+  dispatch --> city[Update active city module]
+  dispatch --> manual[Update GAME MANUAL]
+  dispatch --> over[Keep GAME OVER state]
+
+  lobbyUpdate --> gameOverCheck{{player getGameOver}}
+  gameOverCheck -- Yes --> setOver[Set state to GAME OVER]
+  gameOverCheck -- No --> keepLobby[Keep returned lobby state]
+
+  custom --> updateMsgs[Update MessageManager]
+  setOver --> updateMsgs
+  keepLobby --> updateMsgs
+  city --> updateMsgs
+  manual --> updateMsgs
+  over --> updateMsgs
+
+  updateMsgs --> drawState[Draw scene for current state]
+  drawState --> endFrame[EndDrawing]
+  endFrame --> checkClose
+
+  checkClose -- Yes --> shutdown[Save data unload textures close window]
+  shutdown --> e([End])
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Activity Diagram: City Entry + Lobby System</h2>
+      <p class="section-note">How the player navigates lobby rooms and enters city scenes.</p>
+      <div class="mermaid diagram">
+flowchart TD
+    s([Start]) --> lobbyIn[Enter Lobby state]
+    lobbyIn --> move[Move Cap in lobby]
+    move --> inside{{Inside an interactive room?}}
+    inside -- No --> move
+    inside -- Yes --> enterKey{{Enter key pressed?}}
+    enterKey -- No --> move
+    enterKey -- Yes --> gated{{Room has token requirement?}}
+
+    gated -- No --> sceneStart[Switch to selected scene]
+    gated -- Yes --> enough{{Enough tokens available?}}
+    enough -- No --> warn[Show warning message]
+    warn --> move
+    enough -- Yes --> deduct[Deduct room token cost]
+    deduct --> sceneStart
+
+    sceneStart --> cityLoop[Run city update/draw loop]
+    cityLoop --> back{{L pressed or city exit condition?}}
+    back -- No --> cityLoop
+    back -- Yes --> lobbyReturn[Return to Lobby state]
+    lobbyReturn --> e([End])
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Activity Diagram: Pong Game</h2>
+      <p class="section-note">Enemy selection, gameplay loop, pause logic, and win/lose transitions.</p>
+      <div class="mermaid diagram">
+flowchart TD
+    s([Start]) --> enemyMenu[Open enemy mode menu]
+    enemyMenu --> mode{{AI or Human mode selected?}}
+    mode --> level[Select level or start match]
+    level --> playLoop[Gameplay loop]
+
+    playLoop --> pauseQ{{Pause key pressed?}}
+    pauseQ -- Yes --> paused[Pause screen]
+    paused --> resume{{Resume or menu/restart?}}
+    resume -- Resume --> playLoop
+    resume -- Menu --> enemyMenu
+    resume -- Restart --> level
+
+    pauseQ -- No --> forkPlay[[Fork]]
+    forkPlay --> pad[Update paddles]
+    forkPlay --> ball[Update ball movement]
+    forkPlay --> coll[Check collisions]
+    pad --> joinPlay[[Join]]
+    ball --> joinPlay
+    coll --> joinPlay
+
+    joinPlay --> score[Update scores]
+    score --> winQ{{Win/Lose target reached?}}
+    winQ -- No --> playLoop
+    winQ -- Yes --> endScreen[Show WIN/LOSE screen]
+    endScreen --> replay{{Replay or return?}}
+    replay -- Replay --> level
+    replay -- Return --> e([End])
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Activity Diagram: SpaceShooter</h2>
+      <p class="section-note">Mode selection, parallel gameplay updates, collisions, and return flow.</p>
+      <div class="mermaid diagram">
+flowchart TD
+    s([Start]) --> modeSel[Show game mode selection]
+    modeSel --> confirm{{Mode confirmed?}}
+    confirm -- No --> modeSel
+    confirm -- Yes --> initRun[Initialize timers, player, and counters]
+    initRun --> frameLoop[Gameplay frame loop]
+
+    frameLoop --> forkShoot[[Fork]]
+    forkShoot --> input[Handle movement and shooting input]
+    forkShoot --> spawn[Update meteor/power-up timers]
+    forkShoot --> updateSprites[Update lasers, meteors, explosions]
+    forkShoot --> audio[Update music/audio]
+
+    input --> joinShoot[[Join]]
+    spawn --> joinShoot
+    updateSprites --> joinShoot
+    audio --> joinShoot
+
+    joinShoot --> collisions[Check player/laser/object collisions]
+    collisions --> over{{Game over or mode limit reached?}}
+    over -- No --> leave{{L pressed to leave?}}
+    leave -- No --> frameLoop
+    leave -- Yes --> lobbyOut[Set returnToLobby=true]
+    lobbyOut --> e([End])
+
+    over -- Yes --> gameOver[Show game over summary screen]
+    gameOver --> leaveOver{{L pressed to return?}}
+    leaveOver -- No --> gameOver
+    leaveOver -- Yes --> lobbyOut
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Activity Diagram: Car Game</h2>
+      <p class="section-note">Runner loop with spawning, collisions, effects, pause, and restart behavior.</p>
+      <div class="mermaid diagram">
+flowchart TD
+    s([Start]) --> init[Initialize car, background, obstacles, coins, and power-ups]
+    init --> runLoop[CarCity frame loop]
+
+    gameOverQ{{Game over state?}}
+    restartQ{{R pressed to restart?}}
+    pausedQ{{Paused second life delay?}}
+    resumeQ{{Pause timer finished?}}
+    collQ{{Collision with obstacle?}}
+    lifeQ{{Big obstacle or second life used?}}
+    coinQ{{Coin collected?}}
+    effectQ{{Power-up collected?}}
+
+    runLoop --> gameOverQ
+    gameOverQ -- Yes --> restartQ
+    restartQ -- No --> runLoop
+    restartQ -- Yes --> reset[Reset score, timers, entities, and car state]
+    reset --> runLoop
+
+    gameOverQ -- No --> pausedQ
+    pausedQ -- Yes --> pauseTimer[Update pause timer]
+    pauseTimer --> resumeQ
+    resumeQ -- No --> runLoop
+    resumeQ -- Yes --> runLoop
+
+    pausedQ -- No --> forkCar[[Fork]]
+    forkCar --> moveCar[Update car movement]
+    forkCar --> spawnObs[Spawn/update obstacles]
+    forkCar --> spawnCoins[Spawn/update coins]
+    forkCar --> spawnPups[Spawn/update power-ups]
+
+    moveCar --> joinCar[[Join]]
+    spawnObs --> joinCar
+    spawnCoins --> joinCar
+    spawnPups --> joinCar
+
+    joinCar --> collQ
+    collQ -- Yes --> lifeQ
+    lifeQ -- Yes --> toGameOver[Set gameOver=true]
+    toGameOver --> runLoop
+    lifeQ -- No --> secondLife[Activate second-life pause]
+    secondLife --> runLoop
+
+    collQ -- No --> coinQ
+    coinQ -- Yes --> addCoin[Increment coin counter]
+    addCoin --> effectQ
+    coinQ -- No --> effectQ
+
+    effectQ -- Yes --> applyFx[Apply slow freeze or coin-rain effect]
+    applyFx --> scoreTick
+    effectQ -- No --> scoreTick[Update score and difficulty timers]
+    scoreTick --> runLoop
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Deployment Diagram</h2>
+      <p class="section-note">Desktop-only local execution with explicit node stereotypes, vital artifacts, and labeled communication paths.</p>
+      <div class="mermaid diagram">
+flowchart TB
+    player([Player])
+
+    subgraph desktop[Windows Desktop PC «device»]
+      os[Windows OS + Filesystem «executionEnvironment»]
+      exe[[CapTale.exe «artifact»]]
+      raylib[(Raylib + C++ runtime DLLs «library»)]
+      assets[/Assets bundle «artifact»\nTextures / Fonts / Audio / CSV/]
+      save[(characterData.txt «artifact»)]
+    end
+
+    player -->|«keyboard/mouse + display/audio»| exe
+    exe -->|«in-process API calls»| raylib
+    exe -->|«filesystem read»| assets
+    exe -->|«filesystem read/write»| save
+    exe -->|«Win32/OpenGL/audio services»| os
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>4+1 View Model</h2>
+
+      <div class="view-grid">
+        <article>
+          <h3>Logical View</h3>
+          <p>CapTaleSystem controls the application state. Cap stores player resources. Lobby routes the player into scene modules. The main city scenes are CustomCity, PongCity, CarCity, ATMCity, EarnCity, EnergyCity, and SpaceShooter. MessageManager supports user feedback, while Timer handles time-based behavior.</p>
+        </article>
+
+        <article>
+          <h3>Development View</h3>
+          <p>The project is organized around a single main.cpp entry point and a set of headers in headers/. Core files include cap.h, lobby.h, message.h, customCity.h, pongCity.h, carCity.h, atmCity.h, earningCity.h, energyCity.h, spaceShooter.h, sprites.h, custom_timer.h, settings.h, and spaceShooterSettings.h.</p>
+        </article>
+
+        <article>
+          <h3>Process View</h3>
+          <p>The runtime follows a single game loop. Each frame handles input, updates the active scene, processes collisions or timers, and renders the current screen. CapTaleSystem switches the active scene based on lobby selection or return-to-lobby signals from city modules.</p>
+        </article>
+
+        <article>
+          <h3>Physical View</h3>
+          <p>The system runs locally on a Windows desktop as a native Raylib-based C++ executable. All rendering, input, audio, and persistence occur on the same machine using local assets and the save file characterData.txt.</p>
+        </article>
+      </div>
+
+      <div class="scenarios">
+        <h3>Scenarios</h3>
+        <ul>
+          <li>Entering a city from the lobby, paying any required token cost, and starting the selected scene.</li>
+          <li>Playing a city mini-game such as Pong, Car City, Earn City, Energy City, or Space Shooter.</li>
+          <li>Managing tokens and energy through ATM conversion, item collection, and lobby movement.</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
