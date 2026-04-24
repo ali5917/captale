@@ -126,6 +126,233 @@ flowchart LR
     </section>
 
     <section class="card">
+      <h2>Use Case Diagram — Lobby Module</h2>
+      <p class="section-note">Specialized lobby behavior: room overlap detection, Enter-confirmed transitions, low-energy warning, and room-specific entry checks.</p>
+      <div class="mermaid diagram">
+flowchart LR
+    playerL["Player"]
+
+    subgraph lobbySystem["CapTale System — Lobby Module"]
+      navigateLobby["Navigate Lobby"]
+      detectRoom["Detect Current Room (checkContains)"]
+      confirmEnter["Confirm Entry (Enter key)"]
+      validatePaidRoom["Validate Paid Room Tokens"]
+      blockPaidEntry["Show 'Need more tokens' Message"]
+      lowEnergyCheck["Check Low-Energy Threshold (< 20)"]
+      showLowEnergy["Show 'Eat some fruits' Warning"]
+      openManualIcon["Open Manual via Menu Icon"]
+      enterCustomize["Enter Custom City"]
+      enterResourceRoom["Enter Resource Room (ATM / Earn / Energy)"]
+      enterPaidRoom["Enter Paid Room (Pong / Car / Space)"]
+      customizeCapL["Customize Cap"]
+      viewManualL["View Manual Screen"]
+      returnLobbyL["Return to Lobby"]
+      energyConstraint["«constraint» Player movement drains energy; warning at energy < 20"]
+      enterConstraint["«constraint» Room transition only when inside room and Enter is pressed"]
+    end
+
+    playerL --> navigateLobby
+    playerL --> confirmEnter
+    playerL --> openManualIcon
+    playerL --> customizeCapL
+    playerL --> viewManualL
+    playerL --> returnLobbyL
+
+    navigateLobby -->|"«include»"| detectRoom
+    navigateLobby -->|"«include»"| lowEnergyCheck
+    showLowEnergy -.->|"«extend»"| lowEnergyCheck
+
+    confirmEnter -->|"«include»"| detectRoom
+    confirmEnter -->|"«include»"| validatePaidRoom
+    enterCustomize -->|"«specializes»"| confirmEnter
+    enterResourceRoom -->|"«specializes»"| confirmEnter
+    enterPaidRoom -->|"«specializes»"| confirmEnter
+    blockPaidEntry -.->|"«extend»"| validatePaidRoom
+
+    openManualIcon -->|"«include»"| viewManualL
+    energyConstraint -.-> lowEnergyCheck
+    enterConstraint -.-> confirmEnter
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Use Case Diagram — Game City Module</h2>
+      <p class="section-note">Specialized paid-game runtime: city-specific loops, token-gated entry, and conditional pause/restart behaviors.</p>
+      <div class="mermaid diagram">
+flowchart LR
+    playerG["Player"]
+
+    subgraph gameSystem["CapTale System — Game City Module"]
+      enterGameCity["Enter Game City"]
+      checkTokens["Check Tokens"]
+      deductTokens["Deduct Tokens"]
+      entryBlockedG["Alert: Entry Blocked"]
+
+      playPongG["Play Pong City"]
+      pongMode["Select Pong Mode (Enemy / Human)"]
+      pongScore["Run Pong Rally & Score Loop"]
+      playCarG["Play Car City"]
+      carDiff["Run Car Difficulty Ramp"]
+      carSecondLife["Apply Second-Life Pause"]
+      playShooterG["Play Space Shooter"]
+      shooterLoop["Run Shooter Waves & Object Spawns"]
+      cityReturn["Return to Lobby (L)"]
+
+      pauseResumeG["Pause / Resume"]
+      restartReplayG["Restart / Replay"]
+      tokenConstraint["«constraint» Entry costs differ by city: Car 5, Pong 8, Space 10"]
+      pauseConstraint["«constraint» Pause logic is city-specific (Pong key pause, Car second-life pause)"]
+    end
+
+    playerG --> enterGameCity
+    playerG --> pauseResumeG
+    playerG --> restartReplayG
+    playerG --> cityReturn
+
+    enterGameCity -->|"«include»"| checkTokens
+    enterGameCity -->|"«include»"| deductTokens
+    entryBlockedG -.->|"«extend»"| checkTokens
+    tokenConstraint -.-> checkTokens
+
+    playPongG -->|"«specializes»"| enterGameCity
+    playCarG -->|"«specializes»"| enterGameCity
+    playShooterG -->|"«specializes»"| enterGameCity
+
+    playPongG -->|"«include»"| pongMode
+    playPongG -->|"«include»"| pongScore
+    playCarG -->|"«include»"| carDiff
+    playCarG -->|"«include»"| carSecondLife
+    playShooterG -->|"«include»"| shooterLoop
+
+    pauseResumeG -.->|"«extend»"| playPongG
+    pauseResumeG -.->|"«extend»"| playCarG
+    pauseResumeG -.->|"«extend»"| playShooterG
+    restartReplayG -.->|"«extend»"| playPongG
+    restartReplayG -.->|"«extend»"| playCarG
+    restartReplayG -.->|"«extend»"| playShooterG
+    cityReturn -.->|"«extend»"| playPongG
+    cityReturn -.->|"«extend»"| playCarG
+    cityReturn -.->|"«extend»"| playShooterG
+    pauseConstraint -.-> pauseResumeG
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Use Case Diagram — Resource City Module</h2>
+      <p class="section-note">Specialized resource loops: quiz reward/penalty logic, ATM conversion policy, and item-based energy restoration.</p>
+      <div class="mermaid diagram">
+flowchart LR
+    playerR["Player"]
+
+    subgraph resourceSystem["CapTale System — Resource City Module"]
+      enterResourceR["Enter Resource City"]
+      playEnergyR["Play Energy City"]
+      playEarnR["Play Earn City"]
+      playAtmR["Play ATM City"]
+
+      spawnItemR["Spawn Falling Item"]
+      detectCatchR["Detect Basket Catch"]
+      restoreEnergyR["Apply Energy Gain (+2 fruit / +10 cap)"]
+
+      presentQuizR["Present Random Question"]
+      submitAnswerR["Submit Answer / Skip"]
+      earnCashR["Apply Cash Reward"]
+      penaltyCashR["Apply Cash Penalty (not below 0)"]
+
+      convertCashToTokensR["Convert Cash to Tokens (cash / 50)"]
+      resetCashR["Set Cash to 0 after conversion"]
+      conversionMsgR["Show Conversion Message"]
+      resourceConstraint["«constraint» Energy clamped to MAX_ENERGY"]
+    end
+
+    playerR --> enterResourceR
+    playerR --> submitAnswerR
+
+    playEnergyR -->|"«specializes»"| enterResourceR
+    playEarnR -->|"«specializes»"| enterResourceR
+    playAtmR -->|"«specializes»"| enterResourceR
+
+    playEnergyR -->|"«include»"| spawnItemR
+    playEnergyR -->|"«include»"| detectCatchR
+    playEnergyR -->|"«include»"| restoreEnergyR
+
+    playEarnR -->|"«include»"| presentQuizR
+    playEarnR -->|"«include»"| submitAnswerR
+    earnCashR -.->|"«extend»"| submitAnswerR
+    penaltyCashR -.->|"«extend»"| submitAnswerR
+
+    playAtmR -->|"«include»"| convertCashToTokensR
+    playAtmR -->|"«include»"| resetCashR
+    playAtmR -->|"«include»"| conversionMsgR
+    resourceConstraint -.-> restoreEnergyR
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Use Case Diagram — Token &amp; Economy System</h2>
+      <p class="section-note">Cross-cutting economy policies: affordability checks, token charging, energy/cash bounds, and lifecycle persistence.</p>
+      <div class="mermaid diagram">
+flowchart LR
+    playerE["Player"]
+    fileE["File System"]
+
+    subgraph ecoSystem["CapTale System — Token & Economy"]
+      checkTokensE["Check Tokens"]
+      deductTokensE["Deduct Tokens"]
+      entryBlockedE["Alert: Entry Blocked"]
+      cityCostE["Apply City Entry Cost (5 / 8 / 10)"]
+
+      checkEnergyE["Check Energy"]
+      consumeEnergyE["Consume Movement Energy"]
+      insufficientEnergyE["Alert: Insufficient Energy"]
+      restoreEnergyE["Restore Energy from Energy City"]
+
+      earnCashE["Record Earn City Reward"]
+      penaltyCashE["Record Earn City Penalty"]
+      convertCashToTokensE["Convert Cash to Tokens"]
+      zeroCashE["Set Cash to 0 after ATM conversion"]
+      clampBoundsE["Clamp Resource Bounds (cash/tokens/energy)"]
+
+      restoreProfileE["Restore Economy State on Launch"]
+      persistProfileE["Persist Economy State on Exit"]
+
+      customizeCapE["Customize Cap (No Economy Cost)"]
+      viewManualE["View Manual (No Economy Cost)"]
+      returnLobbyE["Return to Lobby"]
+
+      energyConstraintE["«constraint» Low-energy warning threshold: energy < 20"]
+      atmConstraintE["«constraint» ATM conversion uses integer division: cash / 50"]
+    end
+
+    playerE --> checkTokensE
+    playerE --> checkEnergyE
+    playerE --> consumeEnergyE
+    playerE --> customizeCapE
+    playerE --> viewManualE
+    playerE --> returnLobbyE
+    fileE -.-> restoreProfileE
+    fileE -.-> persistProfileE
+
+    checkTokensE -->|"«include»"| deductTokensE
+    deductTokensE -->|"«include»"| cityCostE
+    entryBlockedE -.->|"«extend»"| checkTokensE
+
+    insufficientEnergyE -.->|"«extend»"| checkEnergyE
+    restoreEnergyE -->|"«include»"| clampBoundsE
+    energyConstraintE -.-> checkEnergyE
+
+    earnCashE -->|"«include»"| clampBoundsE
+    penaltyCashE -->|"«include»"| clampBoundsE
+    convertCashToTokensE -->|"«include»"| zeroCashE
+    convertCashToTokensE -->|"«include»"| clampBoundsE
+    atmConstraintE -.-> convertCashToTokensE
+
+    restoreProfileE -->|"«include»"| clampBoundsE
+    persistProfileE -->|"«include»"| clampBoundsE
+      </div>
+    </section>
+
+    <section class="card">
       <h2>Class Diagram — Core Orchestration</h2>
       <p class="section-note">Top-level ownership, shared state, conceptual city abstraction, and state enums.</p>
       <div class="mermaid diagram">
